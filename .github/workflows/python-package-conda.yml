@@ -94,11 +94,25 @@ jobs:
         run: |
           # No tests are currently checked in. Prevent pytest from importing
           # the root __init__.py just to discover that there are no tests.
-          if ! git ls-files -- '*.py' | grep -Eq '(^|/)(test_[^/]*|[^/]*_test)\.py$'; then
+          # Read the whole file list and finish naturally: explicit exit in a
+          # login shell can fail while running the runner's logout hooks.
+          if git ls-files -- '*.py' | grep -E '(^|/)(test_[^/]*|[^/]*_test)\.py
+
+      - name: Document integration coverage
+        run: |
+          cat >> "$GITHUB_STEP_SUMMARY" <<'SUMMARY'
+          ### Coverage limitations
+          - This workflow checks Conda dependencies and source syntax, and reports lint findings.
+          - Full `import tuatara` and model execution require a separate ScrumPy 3 installation, compiled for the same Python interpreter.
+          - ScrumPy is absent from environment.yml; it is not installed or mocked by this workflow.
+          - Model, BioCyc, Roary and Prokka integration fixtures are not included in this repository.
+          - Package build/publish is outside this workflow: no setup.py or pyproject.toml is present.
+          SUMMARY
+ > /dev/null; then
+            python -m pytest
+          else
             echo "No test files are present; runtime tests were not run." | tee -a "$GITHUB_STEP_SUMMARY"
-            exit 0
           fi
-          python -m pytest
 
       - name: Document integration coverage
         run: |
